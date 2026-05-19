@@ -1,0 +1,83 @@
+@startuml PackML Unit State Machine
+
+skinparam state {
+    BackgroundColor<<stable>> #DDEEFF
+    BackgroundColor<<acting>> #FFF3CC
+    BorderColor Black
+    FontName Arial
+}
+skinparam shadowing false
+
+[*] --> Stopped
+
+state Stopped    <<stable>>
+state Idle       <<stable>>
+state Suspended  <<stable>>
+state Execute    <<stable>>
+state Held       <<stable>>
+state Complete   <<stable>>
+state Aborted    <<stable>>
+
+state Resetting    <<acting>>
+state Starting     <<acting>>
+state Completing   <<acting>>
+state Stopping     <<acting>>
+state Holding      <<acting>>
+state UnHolding    <<acting>>
+state Suspending   <<acting>>
+state UnSuspending <<acting>>
+state Aborting     <<acting>>
+state Clearing     <<acting>>
+
+' Normal production path
+Stopped    --> Resetting    : SC_Reset
+Resetting  --> Idle         : done
+Idle       --> Starting     : SC_Start
+Starting   --> Execute      : done
+Execute    --> Completing   : done
+Completing --> Complete     : done
+Complete   --> Resetting    : SC_Reset
+
+' Hold / UnHold
+Execute    --> Holding      : SC_Hold
+Holding    --> Held         : done
+Held       --> UnHolding    : SC_UnHold
+UnHolding  --> Execute      : done
+
+' Suspend / UnSuspend
+Execute      --> Suspending    : SC_Suspend
+Suspending   --> Suspended     : done
+Suspended    --> UnSuspending  : SC_UnSuspend
+UnSuspending --> Execute       : done
+
+' Stop (from all stable states except Aborted)
+Stopped   --> Stopping : SC_Stop
+Idle      --> Stopping : SC_Stop
+Execute   --> Stopping : SC_Stop
+Held      --> Stopping : SC_Stop
+Suspended --> Stopping : SC_Stop
+Complete  --> Stopping : SC_Stop
+Stopping  --> Stopped  : done
+
+' Abort (from any state)
+Stopped      --> Aborting : SC_Abort
+Idle         --> Aborting : SC_Abort
+Execute      --> Aborting : SC_Abort
+Held         --> Aborting : SC_Abort
+Suspended    --> Aborting : SC_Abort
+Complete     --> Aborting : SC_Abort
+Resetting    --> Aborting : SC_Abort
+Starting     --> Aborting : SC_Abort
+Completing   --> Aborting : SC_Abort
+Stopping     --> Aborting : SC_Abort
+Holding      --> Aborting : SC_Abort
+UnHolding    --> Aborting : SC_Abort
+Suspending   --> Aborting : SC_Abort
+UnSuspending --> Aborting : SC_Abort
+Aborting     --> Aborted  : done
+
+' Clear
+Aborted  --> Clearing : SC_Clear
+Clearing --> Stopped  : done
+
+@enduml

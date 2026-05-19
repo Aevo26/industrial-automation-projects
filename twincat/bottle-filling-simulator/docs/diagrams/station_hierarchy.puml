@@ -1,0 +1,52 @@
+@startuml Station Hierarchy
+
+skinparam classBackgroundColor #FAFAFA
+skinparam classBorderColor #444444
+skinparam packageBackgroundColor #F0F4FF
+skinparam packageBorderColor #7799CC
+skinparam shadowing false
+skinparam FontName Arial
+
+package "Unit Level" {
+    class FB_UnitStateMachine {
+        + eUnitState  : E_PackMLState
+        + SC_Reset    : BOOL
+        + SC_Start    : BOOL
+        + SC_Stop     : BOOL
+        + SC_Hold     : BOOL
+        + SC_UnHold   : BOOL
+        + SC_Suspend  : BOOL
+        + SC_Abort    : BOOL
+        + SC_Clear    : BOOL
+        --
+        - fbInfeed    : FB_InfeedConveyor
+        - fbFill      : FB_FillStation
+        - fbCapping   : FB_CappingStation
+    }
+}
+
+package "Module Level" {
+    class FB_InfeedConveyor {
+        + eModuleState   : E_PackMLState
+        + bBottlePresent : BOOL
+        + bIndexComplete : BOOL
+    }
+
+    class FB_FillStation {
+        + eModuleState  : E_PackMLState
+        + rFillVolume   : REAL
+        + bFillComplete : BOOL
+    }
+
+    class FB_CappingStation {
+        + eModuleState : E_PackMLState
+        + bCapApplied  : BOOL
+        + bCapTorqueOK : BOOL
+    }
+}
+
+FB_UnitStateMachine "1" *-- "1" FB_InfeedConveyor  : coordinates >
+FB_UnitStateMachine "1" *-- "1" FB_FillStation      : coordinates >
+FB_UnitStateMachine "1" *-- "1" FB_CappingStation   : coordinates >
+
+@enduml

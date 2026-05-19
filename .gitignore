@@ -1,0 +1,19 @@
+# TwinCAT artifacts
+_Boot/
+_Deployment/
+*.tpy
+*.compiled-library
+*.bak
+
+# Visual Studio artifacts
+.vs/
+*.user
+bin/
+obj/
+
+# Studio 5000 artifacts
+*.ACD.bak
+
+# General
+.DS_Store
+Thumbs.db
