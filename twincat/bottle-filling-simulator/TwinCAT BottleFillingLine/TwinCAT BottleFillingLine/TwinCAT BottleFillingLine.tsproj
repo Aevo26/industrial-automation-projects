@@ -10,7 +10,7 @@
 		</System>
 		<Plc>
 			<Project GUID="{8FA7BC52-9A8D-4C94-B163-B2B0263D1CF2}" Name="BottleFillingLine" PrjFilePath="BottleFillingLine\BottleFillingLine.plcproj" TmcFilePath="BottleFillingLine\BottleFillingLine.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{2E69001A-A5D2-9F78-7149-F15C00CE8BC6}">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="BottleFillingLine\BottleFillingLine.tmc" TmcHash="{DF06B502-1994-B0F2-5FB0-2D262DF63356}">
 					<Name>BottleFillingLine Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Contexts>
