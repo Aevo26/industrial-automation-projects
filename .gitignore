@@ -22,3 +22,4 @@ _Config/
 *.tsproj.bak
 *.project.~u
 .vs/
+*.tclrs
