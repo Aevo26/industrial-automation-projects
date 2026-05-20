@@ -1,13 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1">
-  <POU Name="MAIN" Id="{7133b59b-9ac1-41be-8dde-d4c9b6401afa}">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="MAIN" Id="{7133b59b-9ac1-41be-8dde-d4c9b6401afa}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
-END_VAR
-]]>
-    </Declaration>
+    // Instance of the unit state machine — this is your "object"
+    UnitSM : FB_UnitStateMachine;
+
+    // Operator command buttons — you'll toggle these manually in the watch window
+    cmd_Reset     : BOOL;
+    cmd_Start     : BOOL;
+    cmd_Stop      : BOOL;
+    cmd_Hold      : BOOL;
+    cmd_UnHold    : BOOL;
+    cmd_Suspend   : BOOL;
+    cmd_UnSuspend : BOOL;
+    cmd_Abort     : BOOL;
+    cmd_Clear     : BOOL;
+END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[]]></ST>
+      <ST><![CDATA[// Call the unit state machine every scan cycle
+// Pass operator commands in, the FB handles all state logic internally
+UnitSM(
+    SC_Reset      := cmd_Reset,
+    SC_Start      := cmd_Start,
+    SC_Stop       := cmd_Stop,
+    SC_Hold       := cmd_Hold,
+    SC_UnHold     := cmd_UnHold,
+    SC_Suspend    := cmd_Suspend,
+    SC_UnSuspend  := cmd_UnSuspend,
+    SC_Abort      := cmd_Abort,
+    SC_Clear      := cmd_Clear
+);
+
+// Auto-clear commands after one scan so they act as pulses not holds
+// This mimics a real momentary button press
+cmd_Reset     := FALSE;
+cmd_Start     := FALSE;
+cmd_Stop      := FALSE;
+cmd_Hold      := FALSE;
+cmd_UnHold    := FALSE;
+cmd_Suspend   := FALSE;
+cmd_UnSuspend := FALSE;
+cmd_Abort     := FALSE;
+cmd_Clear     := FALSE;]]></ST>
     </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="21" Count="23" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>
