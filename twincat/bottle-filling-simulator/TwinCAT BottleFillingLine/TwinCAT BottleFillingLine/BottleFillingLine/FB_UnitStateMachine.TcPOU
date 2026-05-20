@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="FB_UnitStateMachine" Id="{f8168b39-221b-43c4-9122-2a083245bec4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_UnitStateMachine
+VAR_INPUT
+    // Commands from operator or supervisor — these are the SC_ signals in PackML
+    SC_Reset      : BOOL;  // Stopped → Resetting
+    SC_Start      : BOOL;  // Idle → Starting
+    SC_Stop       : BOOL;  // Any state → Stopping
+    SC_Hold       : BOOL;  // Execute → Holding
+    SC_UnHold     : BOOL;  // Held → Unholding
+    SC_Suspend    : BOOL;  // Execute → Suspending
+    SC_UnSuspend  : BOOL;  // Suspended → Unsuspending
+    SC_Abort      : BOOL;  // Any state → Aborting
+    SC_Clear      : BOOL;  // Aborted → Clearing
+END_VAR
+
+VAR_OUTPUT
+    // Current state readable by anything outside this FB
+    CurrentState  : E_PackMLState;
+END_VAR
+
+VAR
+    // Internal timer — acting states use this to simulate work taking time
+    StateTimer    : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// PackML Unit State Machine
+// Runs every PLC scan cycle — checks current state and transitions if conditions are met
+
+// SC_Abort is valid from ANY state — highest priority check
+IF SC_Abort THEN
+    CurrentState := E_PackMLState.Aborting;
+END_IF
+
+CASE CurrentState OF
+
+    E_PackMLState.Undefined:
+        // Starting point — immediately go to Stopped on first scan
+        CurrentState := E_PackMLState.Stopped;
+
+    E_PackMLState.Stopped:
+        // Stable state — wait here until SC_Reset received
+        IF SC_Reset THEN
+            CurrentState := E_PackMLState.Resetting;
+        END_IF
+
+    E_PackMLState.Resetting:
+        // Acting state — simulate hardware init with a 2 second timer
+        StateTimer(IN := TRUE, PT := T#2S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);  // Reset timer
+            CurrentState := E_PackMLState.Idle;
+        END_IF
+
+    E_PackMLState.Idle:
+        // Stable state — machine ready, wait for SC_Start
+        IF SC_Start THEN
+            CurrentState := E_PackMLState.Starting;
+        END_IF
+
+    E_PackMLState.Starting:
+        // Acting state — simulate startup sequence with a 1 second timer
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Execute;
+        END_IF
+
+    E_PackMLState.Execute:
+        // Stable state — production running
+        IF SC_Hold THEN
+            CurrentState := E_PackMLState.Holding;
+        ELSIF SC_Suspend THEN
+            CurrentState := E_PackMLState.Suspending;
+        ELSIF SC_Stop THEN
+            CurrentState := E_PackMLState.Stopping;
+        END_IF
+
+    E_PackMLState.Holding:
+        // Acting state — controlled pause sequence
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Held;
+        END_IF
+
+    E_PackMLState.Held:
+        // Stable state — paused, wait for SC_UnHold
+        IF SC_UnHold THEN
+            CurrentState := E_PackMLState.Unholding;
+        END_IF
+
+    E_PackMLState.Unholding:
+        // Acting state — resume from hold
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Execute;
+        END_IF
+
+    E_PackMLState.Suspending:
+        // Acting state — entering suspended
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Suspended;
+        END_IF
+
+    E_PackMLState.Suspended:
+        // Stable state — starved or blocked, wait for SC_UnSuspend
+        IF SC_UnSuspend THEN
+            CurrentState := E_PackMLState.Unsuspending;
+        END_IF
+
+    E_PackMLState.Unsuspending:
+        // Acting state — resuming from suspended
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Execute;
+        END_IF
+
+    E_PackMLState.Stopping:
+        // Acting state — controlled stop sequence
+        StateTimer(IN := TRUE, PT := T#2S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Stopped;
+        END_IF
+
+    E_PackMLState.Aborting:
+        // Acting state — emergency shutdown, gets here from any state
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Aborted;
+        END_IF
+
+    E_PackMLState.Aborted:
+        // Stable state — fault state, wait for SC_Clear
+        IF SC_Clear THEN
+            CurrentState := E_PackMLState.Clearing;
+        END_IF
+
+    E_PackMLState.Clearing:
+        // Acting state — clear the fault
+        StateTimer(IN := TRUE, PT := T#2S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Stopped;
+        END_IF
+
+    E_PackMLState.Completing:
+        // Acting state — end of batch wrap-up
+        StateTimer(IN := TRUE, PT := T#2S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Complete;
+        END_IF
+
+    E_PackMLState.Complete:
+        // Stable state — batch done, await SC_Reset to run again
+        IF SC_Reset THEN
+            CurrentState := E_PackMLState.Resetting;
+        END_IF
+
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_UnitStateMachine">
+      <LineId Id="32" Count="139" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
