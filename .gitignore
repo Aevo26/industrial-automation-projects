@@ -17,3 +17,8 @@ obj/
 # General
 .DS_Store
 Thumbs.db
+_Boot/
+_Config/
+*.tsproj.bak
+*.project.~u
+.vs/
