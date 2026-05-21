@@ -1,9 +1,14 @@
 # TwinCAT artifacts
 _Boot/
+_CompileInfo/
 _Deployment/
+_Config/
 *.tpy
 *.compiled-library
 *.bak
+*.tsproj.bak
+*.project.~u
+*.tclrs
 
 # Visual Studio artifacts
 .vs/
@@ -17,9 +22,3 @@ obj/
 # General
 .DS_Store
 Thumbs.db
-_Boot/
-_Config/
-*.tsproj.bak
-*.project.~u
-.vs/
-*.tclrs
