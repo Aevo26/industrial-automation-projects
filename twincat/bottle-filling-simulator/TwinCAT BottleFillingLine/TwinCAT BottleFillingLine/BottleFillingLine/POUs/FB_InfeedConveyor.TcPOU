@@ -16,11 +16,11 @@ VAR_OUTPUT
     Ready         : BOOL;   // TRUE when conveyor is running and ready
     Faulted       : BOOL;   // TRUE if a fault condition exists
     CurrentState  : E_PackMLState;
+	BottleCount   : INT;    // Simulates bottles on the conveyor
 END_VAR
 
 VAR
     StateTimer    : TON;    // Simulates conveyor ramp-up and ramp-down time
-    BottleCount   : INT;    // Simulates bottles on the conveyor
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[// Infeed Conveyor Module State Machine

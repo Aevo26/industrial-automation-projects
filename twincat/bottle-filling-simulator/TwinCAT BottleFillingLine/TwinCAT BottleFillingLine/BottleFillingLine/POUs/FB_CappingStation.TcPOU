@@ -14,11 +14,11 @@ VAR_OUTPUT
     Ready         : BOOL;
     Faulted       : BOOL;
     CurrentState  : E_PackMLState;
+	CapsApplied   : INT;    // Simulates cap count
 END_VAR
 
 VAR
     StateTimer    : TON;
-    CapsApplied   : INT;    // Simulates cap count
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[// Capping Station Module State Machine

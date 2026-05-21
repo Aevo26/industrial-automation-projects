@@ -21,12 +21,11 @@ VAR
     cmd_UnSuspend  : BOOL;
     cmd_Abort      : BOOL;
     cmd_Clear      : BOOL;
-END_VAR
-
-]]></Declaration>
+END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// Call the unit state machine every scan cycle
-// Pass operator commands in, the FB handles all state logic internally
+      <ST><![CDATA[// ── Unit State Machine ────────────────────────────────────────────────────────
+// Call every scan cycle, pass operator commands in
+// The FB handles all state logic internally
 UnitSM(
     SC_Reset      := cmd_Reset,
     SC_Start      := cmd_Start,
@@ -51,8 +50,8 @@ cmd_UnSuspend := FALSE;
 cmd_Abort     := FALSE;
 cmd_Clear     := FALSE;
 
-// Call all station FBs every scan
-// Each station receives the current unit state and drives itself accordingly
+// ── Station Function Blocks ───────────────────────────────────────────────────
+// Called every scan, each station drives itself based on unit state
 Infeed(
     UnitState := UnitSM.CurrentState
 );
@@ -63,10 +62,18 @@ FillStn(
 
 CappingStn(
     UnitState := UnitSM.CurrentState
-);]]></ST>
+);
+
+// ── GVL Mirror ────────────────────────────────────────────────────────────────
+// Copy station outputs to global dashboard every scan
+// Anything in the program can now read these without touching the FBs directly
+GVL_PackML.UnitCurrentState  := UnitSM.CurrentState;
+GVL_PackML.InfeedBottleCount := Infeed.BottleCount;
+GVL_PackML.FillLevel         := FillStn.FillLevel;
+GVL_PackML.CapsApplied       := CappingStn.CapsApplied;]]></ST>
     </Implementation>
     <LineIds Name="MAIN">
-      <LineId Id="120" Count="37" />
+      <LineId Id="397" Count="46" />
       <LineId Id="2" Count="0" />
     </LineIds>
   </POU>
