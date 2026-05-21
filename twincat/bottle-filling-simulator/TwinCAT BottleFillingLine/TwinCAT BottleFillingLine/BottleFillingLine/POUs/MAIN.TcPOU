@@ -3,20 +3,27 @@
   <POU Name="MAIN" Id="{7133b59b-9ac1-41be-8dde-d4c9b6401afa}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
-    // Instance of the unit state machine — this is your "object"
-    UnitSM : FB_UnitStateMachine;
+    // Unit state machine
+    UnitSM         : FB_UnitStateMachine;
 
-    // Operator command buttons — you'll toggle these manually in the watch window
-    cmd_Reset     : BOOL;
-    cmd_Start     : BOOL;
-    cmd_Stop      : BOOL;
-    cmd_Hold      : BOOL;
-    cmd_UnHold    : BOOL;
-    cmd_Suspend   : BOOL;
-    cmd_UnSuspend : BOOL;
-    cmd_Abort     : BOOL;
-    cmd_Clear     : BOOL;
-END_VAR]]></Declaration>
+    // Station function blocks — instantiated here, called every scan
+    Infeed         : FB_InfeedConveyor;
+    FillStn        : FB_FillStation;
+    CappingStn     : FB_CappingStation;
+
+    // Operator command buttons — toggle manually in the watch window
+    cmd_Reset      : BOOL;
+    cmd_Start      : BOOL;
+    cmd_Stop       : BOOL;
+    cmd_Hold       : BOOL;
+    cmd_UnHold     : BOOL;
+    cmd_Suspend    : BOOL;
+    cmd_UnSuspend  : BOOL;
+    cmd_Abort      : BOOL;
+    cmd_Clear      : BOOL;
+END_VAR
+
+]]></Declaration>
     <Implementation>
       <ST><![CDATA[// Call the unit state machine every scan cycle
 // Pass operator commands in, the FB handles all state logic internally
@@ -42,10 +49,24 @@ cmd_UnHold    := FALSE;
 cmd_Suspend   := FALSE;
 cmd_UnSuspend := FALSE;
 cmd_Abort     := FALSE;
-cmd_Clear     := FALSE;]]></ST>
+cmd_Clear     := FALSE;
+
+// Call all station FBs every scan
+// Each station receives the current unit state and drives itself accordingly
+Infeed(
+    UnitState := UnitSM.CurrentState
+);
+
+FillStn(
+    UnitState := UnitSM.CurrentState
+);
+
+CappingStn(
+    UnitState := UnitSM.CurrentState
+);]]></ST>
     </Implementation>
     <LineIds Name="MAIN">
-      <LineId Id="21" Count="23" />
+      <LineId Id="120" Count="37" />
       <LineId Id="2" Count="0" />
     </LineIds>
   </POU>

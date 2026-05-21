@@ -8,6 +8,7 @@ VAR_INPUT
     Stop          : BOOL;   // Unit stopping — stop conveyor
     Hold          : BOOL;   // Unit holding — pause conveyor
     Abort         : BOOL;   // Unit aborting — kill conveyor immediately
+    UnitState     : E_PackMLState;    // Added: wired from UnitSM.CurrentState in MAIN
 END_VAR
 
 VAR_OUTPUT
