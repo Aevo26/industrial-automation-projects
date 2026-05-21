@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="FB_CappingStation" Id="{5562ffb9-222d-4e6a-85a2-6cdcf684487b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_CappingStation
+VAR_INPUT
+    Start         : BOOL;
+    Stop          : BOOL;
+    Hold          : BOOL;
+    Abort         : BOOL;
+END_VAR
+
+VAR_OUTPUT
+    Ready         : BOOL;
+    Faulted       : BOOL;
+    CurrentState  : E_PackMLState;
+END_VAR
+
+VAR
+    StateTimer    : TON;
+    CapsApplied   : INT;    // Simulates cap count
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Capping Station Module State Machine
+// Simulates a capping head applying caps to filled bottles
+
+IF Abort THEN
+    CurrentState := E_PackMLState.Aborting;
+    Ready        := FALSE;
+END_IF
+
+CASE CurrentState OF
+
+    E_PackMLState.Undefined:
+        CurrentState := E_PackMLState.Stopped;
+        Ready        := FALSE;
+
+    E_PackMLState.Stopped:
+        Ready       := FALSE;
+        CapsApplied := 0;
+        IF Start THEN
+            CurrentState := E_PackMLState.Starting;
+        END_IF
+
+    E_PackMLState.Starting:
+        // Simulate capping head homing — 1 second
+        Ready := FALSE;
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Execute;
+        END_IF
+
+    E_PackMLState.Execute:
+        // Apply caps and count them
+        Ready       := TRUE;
+        CapsApplied := CapsApplied + 1;
+        IF Hold THEN
+            CurrentState := E_PackMLState.Holding;
+        ELSIF Stop THEN
+            CurrentState := E_PackMLState.Stopping;
+        END_IF
+
+    E_PackMLState.Holding:
+        Ready := FALSE;
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Held;
+        END_IF
+
+    E_PackMLState.Held:
+        Ready := FALSE;
+        IF Start THEN
+            CurrentState := E_PackMLState.Unholding;
+        END_IF
+
+    E_PackMLState.Unholding:
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Execute;
+        END_IF
+
+    E_PackMLState.Stopping:
+        Ready := FALSE;
+        StateTimer(IN := TRUE, PT := T#2S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Stopped;
+        END_IF
+
+    E_PackMLState.Aborting:
+        Ready := FALSE;
+        StateTimer(IN := TRUE, PT := T#500MS);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            Faulted      := TRUE;
+            CurrentState := E_PackMLState.Aborted;
+        END_IF
+
+    E_PackMLState.Aborted:
+        Ready   := FALSE;
+        Faulted := TRUE;
+
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_CappingStation">
+      <LineId Id="27" Count="81" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

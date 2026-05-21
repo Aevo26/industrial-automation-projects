@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="FB_InfeedConveyor" Id="{428844d5-014b-42a9-90e9-98c5f05d5dd5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_InfeedConveyor
+VAR_INPUT
+    // Commands passed down from the unit state machine
+    Start         : BOOL;   // Unit entered Execute — start conveyor
+    Stop          : BOOL;   // Unit stopping — stop conveyor
+    Hold          : BOOL;   // Unit holding — pause conveyor
+    Abort         : BOOL;   // Unit aborting — kill conveyor immediately
+END_VAR
+
+VAR_OUTPUT
+    // Status reported up to the unit state machine
+    Ready         : BOOL;   // TRUE when conveyor is running and ready
+    Faulted       : BOOL;   // TRUE if a fault condition exists
+    CurrentState  : E_PackMLState;
+END_VAR
+
+VAR
+    StateTimer    : TON;    // Simulates conveyor ramp-up and ramp-down time
+    BottleCount   : INT;    // Simulates bottles on the conveyor
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Infeed Conveyor Module State Machine
+// Receives commands from unit, reports status back up
+
+// Abort overrides everything — immediate stop
+IF Abort THEN
+    CurrentState  := E_PackMLState.Aborting;
+    Ready         := FALSE;
+END_IF
+
+CASE CurrentState OF
+
+    E_PackMLState.Undefined:
+        // First scan — go to stopped
+        CurrentState := E_PackMLState.Stopped;
+        Ready        := FALSE;
+
+    E_PackMLState.Stopped:
+        Ready := FALSE;
+        IF Start THEN
+            CurrentState := E_PackMLState.Starting;
+        END_IF
+
+    E_PackMLState.Starting:
+        // Simulate conveyor belt spinning up — 1.5 second ramp
+        Ready := FALSE;
+        StateTimer(IN := TRUE, PT := T#1500MS);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            BottleCount  := 0;
+            CurrentState := E_PackMLState.Execute;
+        END_IF
+
+    E_PackMLState.Execute:
+        // Conveyor running — increment bottle count to simulate flow
+        Ready       := TRUE;
+        BottleCount := BottleCount + 1;
+        IF Hold THEN
+            CurrentState := E_PackMLState.Holding;
+        ELSIF Stop THEN
+            CurrentState := E_PackMLState.Stopping;
+        END_IF
+
+    E_PackMLState.Holding:
+        // Controlled pause — conveyor slows down over 1 second
+        Ready := FALSE;
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Held;
+        END_IF
+
+    E_PackMLState.Held:
+        // Paused — waiting for unit to send resume
+        Ready := FALSE;
+        IF Start THEN
+            CurrentState := E_PackMLState.Unholding;
+        END_IF
+
+    E_PackMLState.Unholding:
+        // Resuming from hold
+        StateTimer(IN := TRUE, PT := T#1S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Execute;
+        END_IF
+
+    E_PackMLState.Stopping:
+        // Controlled stop — conveyor ramps down over 2 seconds
+        Ready := FALSE;
+        StateTimer(IN := TRUE, PT := T#2S);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            CurrentState := E_PackMLState.Stopped;
+        END_IF
+
+    E_PackMLState.Aborting:
+        // Immediate stop — no ramp down
+        Ready  := FALSE;
+        StateTimer(IN := TRUE, PT := T#500MS);
+        IF StateTimer.Q THEN
+            StateTimer(IN := FALSE);
+            Faulted      := TRUE;
+            CurrentState := E_PackMLState.Aborted;
+        END_IF
+
+    E_PackMLState.Aborted:
+        // Fault state — waits for unit to clear
+        Ready   := FALSE;
+        Faulted := TRUE;
+
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_InfeedConveyor">
+      <LineId Id="29" Count="89" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
